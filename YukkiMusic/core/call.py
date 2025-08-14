@@ -1,12 +1,3 @@
-#
-# Copyright (C) 2024-2025 by TheTeamVivek@Github, < https://github.com/TheTeamVivek >.
-#
-# This file is part of < https://github.com/TheTeamVivek/YukkiMusic > project,
-# and is released under the MIT License.
-# Please see < https://github.com/TheTeamVivek/YukkiMusic/blob/master/LICENSE >
-#
-# All rights reserved.
-#
 import asyncio
 import logging
 import traceback
@@ -62,6 +53,12 @@ from YukkiMusic.utils.thumbnails import gen_thumb
 links = {}
 logger = logging.getLogger(__name__)
 
+AUDIO_FFMPEG_FILTERS = (
+    'dynaudnorm=f=150:g=12,'
+    'loudnorm=I=-14:TP=-1.5:LRA=11,'
+    'alimiter=limit=-1.5:level=disabled,'
+    'highpass=f=35,lowpass=f=17000'
+)
 
 async def _clear_(chat_id):
     popped = db.pop(chat_id, None)
@@ -327,16 +324,16 @@ class Call:
             except Exception:
                 traceback.print_exc()
                 raise AssistantErr(
-                    "**No Active Voice Chat Found**\n\nPlease make sure group's voice chat is enabled. If already enabled, please end it and start fresh voice chat again and if the problem continues, try /restart"
+                    "Tidak ada obrolan suara aktif yang ditemukan \n\nTolong Pastikan obrolan suara grup diaktifkan.  Jika sudah diaktifkan, silakan akhiri dan mulai obrolan suara baru lagi dan jika masalahnya berlanjut, coba /restart "
                 )
 
         except NoActiveGroupCall:
             raise AssistantErr(
-                "**No Active Voice Chat Found**\n\nPlease make sure group's voice chat is enabled. If already enabled, please end it and start fresh voice chat again and if the problem continues, try /restart"
+                "Tidak ada obrolan suara aktif yang ditemukan \n\nTolong Pastikan obrolan suara grup diaktifkan.  Jika sudah diaktifkan, silakan akhiri dan mulai obrolan suara baru lagi dan jika masalahnya berlanjut, coba /restart "
             )
         except TelegramServerError:
             raise AssistantErr(
-                "**TELEGRAM SERVER ERROR**\n\nPlease restart Your voicechat."
+                "TELEGRAM SERVER ERROR\n\nTolong restart obrolan anda."
             )
         await add_active_chat(chat_id)
         await music_on(chat_id)
@@ -539,163 +536,4 @@ class Call:
                 try:
                     await client.play(chat_id, stream, config=call_config)
                 except Exception:
-                    return await app.send_message(
-                        original_chat_id,
-                        text=_["call_7"],
-                    )
-                button = telegram_markup(_, chat_id)
-                run = await app.send_photo(
-                    original_chat_id,
-                    photo=config.STREAM_IMG_URL,
-                    caption=_["stream_2"].format(user),
-                    reply_markup=InlineKeyboardMarkup(button),
-                )
-                db[chat_id][0]["mystic"] = run
-                db[chat_id][0]["markup"] = "tg"
-            else:
-                url = check[0].get("url")
-                if videoid == "telegram":
-                    image = None
-                elif videoid == "soundcloud":
-                    image = None
-
-                elif "saavn" in videoid:
-                    url = check[0].get("url")
-                    details = await saavn.info(url)
-                    image = details["thumb"]
-                else:
-                    try:
-                        image = await youtube.thumbnail(videoid, True)
-                    except Exception:
-                        image = None
-                if video:
-                    stream = MediaStream(
-                        queued,
-                        audio_parameters=audio_stream_quality,
-                        video_parameters=video_stream_quality,
-                    )
-                else:
-                    if image and config.PRIVATE_BOT_MODE:
-                        stream = MediaStream(
-                            image,
-                            audio_path=queued,
-                            audio_parameters=audio_stream_quality,
-                            video_parameters=video_stream_quality,
-                        )
-                    else:
-                        stream = MediaStream(
-                            queued,
-                            audio_parameters=audio_stream_quality,
-                            video_flags=MediaStream.Flags.IGNORE,
-                        )
-                try:
-                    await client.play(chat_id, stream, config=call_config)
-                except Exception:
-                    return await app.send_message(
-                        original_chat_id,
-                        text=_["call_7"],
-                    )
-                if videoid == "telegram":
-                    button = telegram_markup(_, chat_id)
-                    run = await app.send_photo(
-                        original_chat_id,
-                        photo=(
-                            config.TELEGRAM_AUDIO_URL
-                            if str(streamtype) == "audio"
-                            else config.TELEGRAM_VIDEO_URL
-                        ),
-                        caption=_["stream_1"].format(
-                            title, config.SUPPORT_GROUP, check[0]["dur"], user
-                        ),
-                        reply_markup=InlineKeyboardMarkup(button),
-                    )
-                    db[chat_id][0]["mystic"] = run
-                    db[chat_id][0]["markup"] = "tg"
-                elif videoid == "soundcloud":
-                    button = telegram_markup(_, chat_id)
-                    run = await app.send_photo(
-                        original_chat_id,
-                        photo=config.SOUNCLOUD_IMG_URL,
-                        caption=_["stream_1"].format(
-                            title, config.SUPPORT_GROUP, check[0]["dur"], user
-                        ),
-                        reply_markup=InlineKeyboardMarkup(button),
-                    )
-                    db[chat_id][0]["mystic"] = run
-                    db[chat_id][0]["markup"] = "tg"
-                elif "saavn" in videoid:
-                    button = telegram_markup(_, chat_id)
-                    run = await app.send_photo(
-                        original_chat_id,
-                        photo=image,
-                        caption=_["stream_1"].format(title, url, check[0]["dur"], user),
-                        reply_markup=InlineKeyboardMarkup(button),
-                    )
-                    db[chat_id][0]["mystic"] = run
-                    db[chat_id][0]["markup"] = "tg"
-
-                else:
-                    img = await gen_thumb(videoid)
-                    button = stream_markup(_, videoid, chat_id)
-                    run = await app.send_photo(
-                        original_chat_id,
-                        photo=img,
-                        caption=_["stream_1"].format(
-                            title[:27],
-                            f"https://t.me/{app.username}?start=info_{videoid}",
-                            check[0]["dur"],
-                            user,
-                        ),
-                        reply_markup=InlineKeyboardMarkup(button),
-                    )
-                    db[chat_id][0]["mystic"] = run
-                    db[chat_id][0]["markup"] = "stream"
-
-    async def ping(self):
-        pings = []
-        for call in self.calls:
-            pings.append(call.ping)
-        if pings:
-            return str(round(sum(pings) / len(pings), 3))
-        else:
-            logger.error("No active clients for ping calculation.")
-            return "No active clients"
-
-    async def start(self):
-        """Starts all PyTgCalls instances for the existing userbot clients."""
-        logger.info("Starting PyTgCall Clients")
-        await asyncio.gather(*[c.start() for c in self.calls])
-
-    async def stop(self):
-        t = []
-        for x in await get_active_chats():
-            t.append(self.leave_call(x))
-        await asyncio.gather(*t, return_exceptions=True)
-
-    async def decorators(self):
-        for call in self.calls:
-
-            @call.on_update(filters.chat_update(ChatUpdate.Status.LEFT_CALL))
-            async def stream_services_handler(client, update: ChatUpdate):
-                await self.stop_stream(update.chat_id)
-
-            @call.on_update(filters.stream_end())
-            async def stream_end_handler(client, update: StreamEnded):
-                if not update.stream_type == StreamEnded.Type.AUDIO:
-                    return
-                await self.change_stream(client, update.chat_id)
-
-    def __getattr__(self, name):
-        if not self.calls:
-            raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{name}'"
-            )
-        first_call = self.calls[0]
-        if hasattr(first_call, name):
-            return getattr(first_call, name)
-        raise AttributeError(
-            f"'{type(first_call).__name__}' object has no attribute '{name}'"
-        )
-
-
-Yukki = Call()
+                    return await app.send_messag
